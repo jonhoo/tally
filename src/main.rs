@@ -4,15 +4,16 @@ extern crate clap;
 extern crate libc;
 extern crate time;
 
-use clap::{App, Arg};
+use clap::{App, AppSettings, Arg};
 use libc::{c_long, getrusage, rusage, suseconds_t, time_t, timeval, RUSAGE_CHILDREN};
 use std::process::Command;
 use std::process;
 
 fn main() {
-    let matches = App::new("tally")
+    let mut app = App::new("tally")
         .version(crate_version!())
         .about("prettier subsitute for time")
+        .setting(AppSettings::TrailingVarArg)
         .arg(
             Arg::with_name("posix")
                 .short("p")
@@ -41,25 +42,19 @@ Use the precise output format produced by GNU time:
   %Uuser %Ssystem %Eelapsed %PCPU (%Xtext+%Ddata %Mmax)k
   %Iinputs+%Ooutputs (%Fmajor+%Rminor)pagefaults %Wswaps
 
-Some of these fields are deprecated (%X, %D, and %W),\
+Some of these fields are deprecated (%X, %D, and %W), \
 and will always be 0.",
                 ),
         )
         .arg(
-            Arg::with_name("command")
-                .index(1)
-                .required(true)
-                .value_name("command")
-                .help("Command to fork and execute"),
-        )
-        .arg(
             Arg::with_name("args")
-                .index(2)
+                .index(1)
                 .multiple(true)
-                .value_name("arguments")
+                .allow_hyphen_values(true)
+                .value_name("command arguments")
                 .help("Arguments to pass to command, if any"),
-        )
-        .get_matches();
+        );
+    let matches = app.clone().get_matches();
 
     let mut usage = rusage {
         ru_utime: timeval {
@@ -86,10 +81,17 @@ and will always be 0.",
         ru_nivcsw: 0 as c_long,
     };
 
-    let mut command = Command::new(matches.value_of("command").unwrap());
-    if let Some(args) = matches.values_of("args") {
-        command.args(args);
-    }
+    let mut command = match matches.values_of("args") {
+        Some(mut args) => {
+            let mut command = Command::new(args.next().unwrap());
+            command.args(args);
+            command
+        }
+        None => {
+            app.print_long_help().unwrap();
+            process::exit(127);
+        }
+    };
 
     let mut child = match command.spawn() {
         Ok(child) => child,
