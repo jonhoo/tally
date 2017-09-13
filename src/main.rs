@@ -58,6 +58,7 @@ and will always be 0.",
                 .help(
                     "Output data in delimited format (CSV with custom delimiter).",
                 )
+                .next_line_help(true)
                 .validator(|v| {
                     use std::ascii::AsciiExt;
                     let mut chars = v.chars();
