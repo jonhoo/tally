@@ -1,6 +1,7 @@
 extern crate ansi_term;
 #[macro_use]
 extern crate clap;
+extern crate csv;
 extern crate libc;
 extern crate time;
 
@@ -25,8 +26,8 @@ When in the POSIX locale, use the precise traditional format
 
   \"real %f\\nuser %f\\nsys %f\\n\"
 
-(with numbers in seconds) where the number of decimals in the \
-output for %f is unspecified but is sufficient to express the \
+(with numbers in seconds) where the number of decimals in the
+output for %f is unspecified but is sufficient to express the
 clock tick accuracy, and at least one.",
                 ),
         )
@@ -42,8 +43,51 @@ Use the precise output format produced by GNU time:
   %Uuser %Ssystem %Eelapsed %PCPU (%Xtext+%Ddata %Mmax)k
   %Iinputs+%Ooutputs (%Fmajor+%Rminor)pagefaults %Wswaps
 
-Some of these fields are deprecated (%X, %D, and %W), \
+Some of these fields are deprecated (%X, %D, and %W),
 and will always be 0.",
+                ),
+        )
+        .arg(
+            Arg::with_name("delimited")
+                .short("d")
+                .long("delimited")
+                .takes_value(true)
+                //.require_equals(true)
+                //.set(ArgSettings::EmptyValues)
+                //.default_value(",")
+                .help(
+                    "Output data in delimited format (CSV with custom delimiter).",
+                )
+                .validator(|v| {
+                    use std::ascii::AsciiExt;
+                    let mut chars = v.chars();
+                    let first = chars.next();
+                    if first.is_none() {
+                        return Err(String::from("no delimiter given"));
+                    }
+                    if chars.next().is_some() {
+                        return Err(String::from(
+                            "only single-character delimiters are supported",
+                        ));
+                    }
+                    let first = first.unwrap();
+                    if !first.is_ascii() {
+                        return Err(String::from("only ASCII delimiters are supported"));
+                    }
+                    Ok(())
+                })
+                .long_help(
+                    "\
+Outputs timing informating in a machine-readable delimited format.
+Each row has a single metric with two columns: field name and
+value. The metrics are:
+
+  user: user time (in nanoseconds)
+  system: system time (in nanoseconds)
+  real: elapsed wall clock time (in nanoseconds)
+  peak_mem: max resident memory (in kbytes)
+  major_faults: major page faults
+  minor_faults: minor page faults",
                 ),
         )
         .arg(
@@ -137,14 +181,21 @@ and will always be 0.",
     }
 
     let real_time = start.to(end);
-    let ns = if let Some(ns) = real_time.num_nanoseconds() {
-        ns - real_time.num_seconds() * 1_000_000_000
+    let ns: u64 = if let Some(ns) = real_time.num_nanoseconds() {
+        ns as u64 - real_time.num_seconds() as u64 * 1_000_000_000
     } else if let Some(us) = real_time.num_microseconds() {
-        us - real_time.num_seconds() * 1_000_000
+        us as u64 - real_time.num_seconds() as u64 * 1_000_000
     } else {
         let ms = real_time.num_milliseconds();
-        ms - real_time.num_seconds() * 1_000
+        ms as u64 - real_time.num_seconds() as u64 * 1_000
     };
+
+    let utime_ns =
+        usage.ru_utime.tv_sec as u64 * 1_000_000_000 + usage.ru_utime.tv_usec as u64 * 1_000;
+    let stime_ns =
+        usage.ru_stime.tv_sec as u64 * 1_000_000_000 + usage.ru_stime.tv_usec as u64 * 1_000;
+    let rtime_ns = real_time.num_seconds() as u64 * 1_000_000_000 + ns;
+
     let real_frac = ns as f64 / 1_000_000_000f64;
     let real_frac = format!("{}", real_frac);
     let real_frac = real_frac.trim_left_matches("0.");
@@ -192,6 +243,34 @@ and will always be 0.",
             usage.ru_minflt,
             0, // deprecated
         );
+        process::exit(exit);
+    } else if let Some(d) = matches.value_of("delimited") {
+        use std::io;
+
+        let mut w = csv::WriterBuilder::new();
+        // we know there's only one character due to the validator
+        let delim = d.chars().next().unwrap();
+        // we know there's exactly one ascii character
+        let mut b = [0; 1];
+        delim.encode_utf8(&mut b);
+        w.delimiter(b[0]);
+        // write all the stuff to stdout
+        let stderr = io::stderr();
+        let handle = stderr.lock();
+        let mut wrt = w.from_writer(handle);
+        wrt.write_field(b"user").unwrap();
+        wrt.write_record(&[format!("{}", utime_ns)]).unwrap();
+        wrt.write_field(b"system").unwrap();
+        wrt.write_record(&[format!("{}", stime_ns)]).unwrap();
+        wrt.write_field(b"real").unwrap();
+        wrt.write_record(&[format!("{}", rtime_ns)]).unwrap();
+        wrt.write_field(b"peak_mem").unwrap();
+        wrt.write_record(&[format!("{}", usage.ru_maxrss)]).unwrap();
+        wrt.write_field(b"major_faults").unwrap();
+        wrt.write_record(&[format!("{}", usage.ru_majflt)]).unwrap();
+        wrt.write_field(b"minor_faults").unwrap();
+        wrt.write_record(&[format!("{}", usage.ru_minflt)]).unwrap();
+        drop(wrt);
         process::exit(exit);
     }
 
