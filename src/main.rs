@@ -14,6 +14,15 @@ fn main() {
     let mut app = App::new("tally")
         .version(crate_version!())
         .about("prettier subsitute for time")
+        .long_about(
+            "\
+             tally runs the specified program `command` with the given arguments. \
+             When `command` finishes, time writes a message to standard error giving timing \
+             statistics about this program run. These statistics include (i) the elapsed real \
+             time between invocation and termination, (ii) the user and system CPU time as \
+             returned by getrusage(2), and (iii) other runtime statistics such as peak \
+             resident memory usage, number of page faults, etc.",
+        )
         .setting(AppSettings::AllowExternalSubcommands)
         .arg(
             Arg::with_name("posix")
