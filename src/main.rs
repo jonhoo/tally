@@ -193,23 +193,20 @@ value. The metrics are:
     let stime_ns =
         usage.ru_stime.tv_sec as u64 * 1_000_000_000 + usage.ru_stime.tv_usec as u64 * 1_000;
     let rtime_ns = real_time.num_seconds() as u64 * 1_000_000_000 + ns;
-
-    let real_frac = ns as f64 / 1_000_000_000f64;
-    let real_frac = format!("{}", real_frac);
-    let real_frac = real_frac.trim_left_matches("0.");
-    let timeval_secs = |t: &timeval| {
-        let frac = format!("{}", t.tv_usec as f64 / 1_000_000f64);
-        let frac = frac.trim_left_matches("0.");
-        format!("{}.{}", t.tv_sec, frac)
+    let ns_to_ms_frac = |ns: u64| {
+        format!(
+            "{}.{:03}",
+            ns / 1_000_000_000,
+            (ns % 1_000_000_000) / 1_000_000
+        )
     };
 
     if matches.is_present("posix") {
         eprintln!(
-            "real {}.{}\nuser {}\nsys {}",
-            real_time.num_seconds(),
-            real_frac,
-            timeval_secs(&usage.ru_utime),
-            timeval_secs(&usage.ru_stime)
+            "real {}\nuser {}\nsys {}",
+            ns_to_ms_frac(rtime_ns),
+            ns_to_ms_frac(utime_ns),
+            ns_to_ms_frac(stime_ns),
         );
         process::exit(exit);
     } else if matches.is_present("gnu") {
@@ -222,16 +219,15 @@ value. The metrics are:
         pretty_time.push_str(&format!("{}:", t / 60));
         t = t % 60;
         pretty_time.push_str(&format!("{:02}", t));
-        pretty_time.push_str(&format!(".{}", real_frac));
+        pretty_time.push_str(&format!(".{:03}", (rtime_ns % 1_000_000_000) / 1_000_000));
         eprintln!(
             "\
-             {}user {}system {}elapsed {}%CPU ({}text+{}data {}max)k\n\
+             {}user {}system {}elapsed {:.1}%CPU ({}text+{}data {}max)k\n\
              {}inputs+{}outputs ({}major+{}minor)pagefaults {}swaps",
-            timeval_secs(&usage.ru_utime),
-            timeval_secs(&usage.ru_stime),
+            ns_to_ms_frac(utime_ns),
+            ns_to_ms_frac(stime_ns),
             pretty_time,
-            // TODO: also count usecs
-            (usage.ru_utime.tv_sec + usage.ru_stime.tv_sec) / real_time.num_seconds(),
+            (utime_ns + stime_ns) as f64 / rtime_ns as f64,
             0, // deprecated
             0, // deprecated
             usage.ru_maxrss,
