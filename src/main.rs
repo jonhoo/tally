@@ -343,23 +343,29 @@ value. The metrics are:
     // now for our new and pretty output format
     eprintln!(
         "\
+         {}\n\
+         \n\
          {} {}\n\
          {} {}\n\
          {} {}\n\n\
          {} {}\n\
-         {} {}, {}",
-        // htop colors
-        Colour::Yellow.paint(format!("{:>13}", "user time:")),
+         {} {}, {}\n\
+         \n{}",
+        Colour::White
+            .dimmed()
+            .paint(format!("{:-^45}", " [stats] ")),
+        Colour::Yellow.paint(format!("{:>15}", "user time:")),
         pretty_time(&usage.ru_utime),
-        Colour::Yellow.paint(format!("{:>13}", "system time:")),
+        Colour::Yellow.paint(format!("{:>15}", "system time:")),
         pretty_time(&usage.ru_stime),
-        Colour::Yellow.paint(format!("{:>13}", "real time:")),
+        Colour::Yellow.paint(format!("{:>15}", "real time:")),
         pretty_time2(),
-        Colour::Yellow.paint(format!("{:>13}", "max memory:")),
+        Colour::Yellow.paint(format!("{:>15}", "max memory:")),
         pretty_mem(usage.ru_maxrss),
-        Colour::Yellow.paint(format!("{:>13}", "page faults:")),
+        Colour::Yellow.paint(format!("{:>15}", "page faults:")),
         unit(format!("{}", usage.ru_majflt), "major"),
         unit(format!("{}", usage.ru_minflt), "minor"),
+        Colour::White.dimmed().paint(format!("{:-^45}", "")),
     );
     process::exit(exit);
 }
