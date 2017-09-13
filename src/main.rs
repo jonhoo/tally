@@ -14,7 +14,7 @@ fn main() {
     let mut app = App::new("tally")
         .version(crate_version!())
         .about("prettier subsitute for time")
-        .setting(AppSettings::TrailingVarArg)
+        .setting(AppSettings::AllowExternalSubcommands)
         .arg(
             Arg::with_name("posix")
                 .short("p")
@@ -91,13 +91,11 @@ value. The metrics are:
   minor_faults: minor page faults",
                 ),
         )
-        .arg(
-            Arg::with_name("args")
-                .index(1)
-                .multiple(true)
-                .allow_hyphen_values(true)
-                .value_name("command arguments")
-                .help("Arguments to pass to command, if any"),
+        .usage("tally time [options] command [arguments]...")
+        .after_help(
+            "ARGS:
+    command     the command to tally
+    arguments   any arguments to pass to <command>",
         );
     let matches = app.clone().get_matches();
 
@@ -126,17 +124,16 @@ value. The metrics are:
         ru_nivcsw: 0 as c_long,
     };
 
-    let mut command = match matches.values_of("args") {
-        Some(mut args) => {
-            let mut command = Command::new(args.next().unwrap());
-            command.args(args);
-            command
-        }
-        None => {
-            app.print_long_help().unwrap();
-            process::exit(127);
-        }
-    };
+    let (cmd, cmd_args) = matches.subcommand();
+    if cmd.is_empty() {
+        app.print_long_help().unwrap();
+        process::exit(127);
+    }
+
+    let mut command = Command::new(cmd);
+    if let Some(args) = cmd_args.unwrap().values_of("") {
+        command.args(args);
+    }
 
     let mut child = match command.spawn() {
         Ok(child) => child,
