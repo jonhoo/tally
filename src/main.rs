@@ -217,7 +217,7 @@ and will always be 0.",
         let mut usec = t.tv_usec;
         if usec > 1_000 {
             s.push_str(" ");
-            s.push_str(&unit(format!("{:>3}", t.tv_usec / 1_000), "ms"));
+            s.push_str(&unit(format!("{:>3}", usec / 1_000), "ms"));
             usec = usec % 1_000;
         }
         if usec > 0 {
@@ -246,15 +246,15 @@ and will always be 0.",
         s
     };
     let pretty_mem = |ks| if ks > 10 * 1024 * 1024 {
-        unit(format!("{:>3.0} ", ks as f64 / 1024f64 / 1024f64), "GB")
+        unit(format!("{:.0} ", ks as f64 / 1024f64 / 1024f64), "GB")
     } else if ks > 1024 * 1024 {
-        unit(format!("{:>5.1} ", ks as f64 / 1024f64 / 1024f64), "GB")
+        unit(format!("{:.1} ", ks as f64 / 1024f64 / 1024f64), "GB")
     } else if ks > 10 * 1024 {
-        unit(format!("{:>3.0} ", ks as f64 / 1024f64), "MB")
+        unit(format!("{:.0} ", ks as f64 / 1024f64), "MB")
     } else if ks > 1024 {
-        unit(format!("{:>5.1} ", ks as f64 / 1024f64), "MB")
+        unit(format!("{:.1} ", ks as f64 / 1024f64), "MB")
     } else {
-        unit(format!("{:>5} ", ks), "kB")
+        unit(format!("{} ", ks), "kB")
     };
 
     // now for our new and pretty output format
