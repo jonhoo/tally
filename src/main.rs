@@ -212,15 +212,17 @@ and will always be 0.",
         pretty_time.push_str(&unit(format!("{:>2}", s), "s"));
         pretty_time
     };
+    let has_msec = usage.ru_utime.tv_usec > 1_000 || usage.ru_stime.tv_usec > 1_000;
+    let has_usec = usage.ru_utime.tv_usec % 1_000 > 0 || usage.ru_stime.tv_usec % 1_000 > 0;
     let pretty_time = |t: &timeval| {
         let mut s = pretty_seconds(t.tv_sec);
         let mut usec = t.tv_usec;
-        if usec > 1_000 {
+        if has_msec {
             s.push_str(" ");
             s.push_str(&unit(format!("{:>3}", usec / 1_000), "ms"));
             usec = usec % 1_000;
         }
-        if usec > 0 {
+        if has_usec {
             s.push_str(" ");
             s.push_str(&unit(format!("{:>3}", usec), "µs"));
         }
@@ -229,12 +231,12 @@ and will always be 0.",
     let pretty_time2 = || {
         let mut s = pretty_seconds(real_time.num_seconds());
         let mut ns = ns;
-        if ns > 1_000_000 {
+        if has_msec || ns > 1_000_000 {
             s.push_str(" ");
             s.push_str(&unit(format!("{:>3}", ns / 1_000_000), "ms"));
             ns = ns % 1_000_000;
         }
-        if ns > 1_000 {
+        if has_usec || ns > 1_000 {
             s.push_str(" ");
             s.push_str(&unit(format!("{:>3}", ns / 1_000), "µs"));
             ns = ns % 1_000;
