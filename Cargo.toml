@@ -1,7 +1,16 @@
 [package]
 name = "tally"
 version = "0.1.0"
+
+description = "A prettier version of the time command"
+readme = "README.md"
+
 authors = ["Jon Gjengset <jon@thesquareplanet.com>"]
+
+keywords = ["cli", "system", "utilities"]
+categories = ["command-line-utilities"]
+
+license = "MIT/Apache-2.0"
 
 [dependencies]
 ansi_term = "0.9.0"
