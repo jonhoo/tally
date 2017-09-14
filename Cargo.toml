@@ -1,6 +1,6 @@
 [package]
 name = "tally"
-version = "0.3.2"
+version = "0.4.0"
 
 description = "A prettier version of the time command"
 readme = "README.md"
@@ -18,6 +18,6 @@ license = "MIT/Apache-2.0"
 [dependencies]
 csv = "1.0.0-beta.4"
 colored = "1.5.2"
-clap = "2.26.0"
+clap = "2.26.1"
 libc = "0.2"
 time = "0.1"

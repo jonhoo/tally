@@ -62,9 +62,9 @@ and will always be 0.",
                 .short("d")
                 .long("delimited")
                 .takes_value(true)
-                //.require_equals(true)
-                //.set(ArgSettings::EmptyValues)
-                //.default_value(",")
+                .require_equals(true)
+                .min_values(0)
+                .default_value(",")
                 .help(
                     "Output data in delimited format (CSV with custom delimiter).",
                 )
@@ -248,7 +248,9 @@ value. The metrics are:
             0, // deprecated
         );
         process::exit(exit);
-    } else if let Some(d) = matches.value_of("delimited") {
+    } else if matches.occurrences_of("delimited") != 0 {
+        // NOTE: the unwrap_or here should be unnecessary. kbknapp/clap-rs#1047.
+        let d = matches.value_of("delimited").unwrap_or(",");
         use std::io;
 
         let mut w = csv::WriterBuilder::new();
