@@ -281,31 +281,35 @@ value. The metrics are:
     let unitc = |u| Colour::White.dimmed().paint(u);
     let unit = |v, u| format!("{}{}", v, unitc(u));
 
+    // we want to show the same units on every row
+    let has_h =
+        real_time.num_hours() > 0 || usage.ru_utime.tv_sec > 3600 || usage.ru_stime.tv_sec > 3600;
+    let has_m = has_h || real_time.num_minutes() > 0 || usage.ru_utime.tv_sec > 60 ||
+        usage.ru_stime.tv_sec > 60;
+    let has_usec = usage.ru_utime.tv_usec % 1_000 > 0 || usage.ru_stime.tv_usec % 1_000 > 0;
+    let has_msec = has_usec || usage.ru_utime.tv_usec > 1_000 || usage.ru_stime.tv_usec > 1_000;
+
     let pretty_seconds = |mut s| {
         let mut pretty_time = String::new();
-        let mut hours = false;
-        if s / 3600 > 0 {
-            pretty_time.push_str(&unit(format!("{:>2}", s / 3600), "h"));
-            hours = true;
+        if has_h {
+            pretty_time.push_str(&unit(format!("{:>2}", s / 3600), "h "));
         }
         s = s % 3600;
-        if s / 60 > 0 || hours {
-            pretty_time.push_str(&unit(format!("{:>2}", s / 60), "m"));
+        if has_h || has_m {
+            pretty_time.push_str(&unit(format!("{:>2}", s / 60), "m "));
         }
         s = s % 60;
         pretty_time.push_str(&unit(format!("{:>2}", s), "s"));
         pretty_time
     };
-    let has_msec = usage.ru_utime.tv_usec > 1_000 || usage.ru_stime.tv_usec > 1_000;
-    let has_usec = usage.ru_utime.tv_usec % 1_000 > 0 || usage.ru_stime.tv_usec % 1_000 > 0;
     let pretty_time = |t: &timeval| {
         let mut s = pretty_seconds(t.tv_sec);
         let mut usec = t.tv_usec;
         if has_msec {
             s.push_str(" ");
             s.push_str(&unit(format!("{:>3}", usec / 1_000), "ms"));
-            usec = usec % 1_000;
         }
+        usec = usec % 1_000;
         if has_usec {
             s.push_str(" ");
             s.push_str(&unit(format!("{:>3}", usec), "µs"));
@@ -315,17 +319,16 @@ value. The metrics are:
     let pretty_time2 = || {
         let mut s = pretty_seconds(real_time.num_seconds());
         let mut ns = ns;
-        if has_msec || ns > 1_000_000 {
+        if has_msec {
             s.push_str(" ");
             s.push_str(&unit(format!("{:>3}", ns / 1_000_000), "ms"));
-            ns = ns % 1_000_000;
         }
-        if has_usec || ns > 1_000 {
+        if has_usec {
             s.push_str(" ");
             s.push_str(&unit(format!("{:>3}", ns / 1_000), "µs"));
-            ns = ns % 1_000;
         }
-        if ns > 0 {
+        ns = ns % 1_000;
+        if ns != 0 {
             s.push_str(" ");
             s.push_str(&unit(format!("{:>3}", ns), "ns"));
         }
