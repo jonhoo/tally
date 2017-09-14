@@ -14,6 +14,7 @@ fn main() {
     let mut app = App::new("tally")
         .version(crate_version!())
         .about("prettier subsitute for time")
+        .help_message("Prints help information. Use --help for more details.")
         .long_about(
             "\
              tally runs the specified program `command` with the given arguments. \
