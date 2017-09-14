@@ -1,6 +1,6 @@
-extern crate ansi_term;
 #[macro_use]
 extern crate clap;
+extern crate colored;
 extern crate csv;
 extern crate libc;
 extern crate time;
@@ -277,9 +277,8 @@ value. The metrics are:
         process::exit(exit);
     }
 
-    use ansi_term::Colour;
-    let unitc = |u| Colour::White.dimmed().paint(u);
-    let unit = |v, u| format!("{}{}", v, unitc(u));
+    use colored::Colorize;
+    let unit = |v, u: &str| format!("{}{}", v, u.white().dimmed());
 
     // we want to show the same units on every row
     let has_h =
@@ -357,21 +356,19 @@ value. The metrics are:
          {} {}\n\
          {} {}, {}\n\
          \n{}",
-        Colour::White
-            .dimmed()
-            .paint(format!("{:-^45}", " [stats] ")),
-        Colour::Yellow.paint(format!("{:>15}", "user time:")),
+        format!("{:-^45}", " [stats] ").white().dimmed(),
+        format!("{:>15}", "user time:").yellow(),
         pretty_time(&usage.ru_utime),
-        Colour::Yellow.paint(format!("{:>15}", "system time:")),
+        format!("{:>15}", "system time:").yellow(),
         pretty_time(&usage.ru_stime),
-        Colour::Yellow.paint(format!("{:>15}", "real time:")),
+        format!("{:>15}", "real time:").yellow(),
         pretty_time2(),
-        Colour::Yellow.paint(format!("{:>15}", "max memory:")),
+        format!("{:>15}", "max memory:").yellow(),
         pretty_mem(usage.ru_maxrss),
-        Colour::Yellow.paint(format!("{:>15}", "page faults:")),
+        format!("{:>15}", "page faults:").yellow(),
         unit(format!("{}", usage.ru_majflt), "major"),
         unit(format!("{}", usage.ru_minflt), "minor"),
-        Colour::White.dimmed().paint(format!("{:-^45}", "")),
+        format!("{:-^45}", "").white().dimmed(),
     );
     process::exit(exit);
 }
