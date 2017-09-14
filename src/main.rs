@@ -326,6 +326,7 @@ value. The metrics are:
             s.push_str(&unit(format!("{:>3}", ns / 1_000_000), "ms"));
         }
         if has_usec {
+            ns = ns % 1_000_000;
             s.push_str(" ");
             s.push_str(&unit(format!("{:>3}", ns / 1_000), "µs"));
         }
