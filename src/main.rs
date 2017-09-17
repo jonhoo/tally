@@ -249,8 +249,7 @@ value. The metrics are:
         );
         process::exit(exit);
     } else if matches.occurrences_of("delimited") != 0 {
-        // NOTE: the unwrap_or here should be unnecessary. kbknapp/clap-rs#1047.
-        let d = matches.value_of("delimited").unwrap_or(",");
+        let d = matches.value_of("delimited").unwrap();
         use std::io;
 
         let mut w = csv::WriterBuilder::new();
